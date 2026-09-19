@@ -98,7 +98,7 @@ The backend validates the payload, adds a unique ID and ISO timestamp, appends t
 - **Data serialization:** JavaScript objects are converted to JSON strings for storage and transport.
 - **Input validation:** the API rejects malformed input before mutating persisted state.
 - **Array mutation patterns:** completed sessions are appended to history and displayed in reverse chronological order.
-- **Basic web security:** output sanitization is used in the client before inserting dynamic text into `innerHTML`.
+- **Basic web security:** output sanitization is used in the client before inserting dynamic text into `innerHTML`, and the optional `apiOrigin` override is intended only for trusted local development or testing environments.
 
 ## Future Scalability
 
