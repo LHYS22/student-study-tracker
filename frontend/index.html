@@ -239,7 +239,8 @@
           </p>
         </div>
 
-        <div class="timer-card" aria-label="Pomodoro timer controls">
+        <section class="timer-card" aria-labelledby="timerControlsHeading">
+          <h2 id="timerControlsHeading" class="sr-only">Pomodoro timer controls</h2>
           <div>
             <label class="field-label" for="subjectInput">Current study subject</label>
             <input
@@ -260,7 +261,7 @@
           </div>
 
           <div id="banner" class="banner" role="alert" aria-live="assertive"></div>
-        </div>
+        </section>
       </section>
 
       <section class="panel">
@@ -288,6 +289,7 @@
       let countdownIntervalId = null;
       let remainingMilliseconds = TIMER_DURATION_MS;
       let sessionActive = false;
+      let announcementTimeoutId = null;
 
       function sanitizeText(value) {
         // Escaping HTML-sensitive characters prevents saved text from being
@@ -311,9 +313,14 @@
       }
 
       function announceStatus(message) {
+        if (announcementTimeoutId !== null) {
+          window.clearTimeout(announcementTimeoutId);
+        }
+
         screenReaderStatus.textContent = '';
-        window.setTimeout(() => {
+        announcementTimeoutId = window.setTimeout(() => {
           screenReaderStatus.textContent = message;
+          announcementTimeoutId = null;
         }, 0);
       }
 
@@ -427,11 +434,17 @@
           return true;
         } catch (error) {
           console.error(error);
-          showBanner(
-            'The timer finished, but the backend could not be reached. Check that port 5000 is running.',
-            'error'
+          const bannerMessage =
+            error instanceof TypeError
+              ? 'The timer finished, but the backend could not be reached. Check that port 5000 is running.'
+              : error.message;
+
+          showBanner(bannerMessage, 'error');
+          announceStatus(
+            error instanceof TypeError
+              ? 'Pomodoro complete, but the session could not be saved.'
+              : `Pomodoro complete, but saving failed: ${error.message}`
           );
-          announceStatus('Pomodoro complete, but the session could not be saved.');
           return false;
         }
       }

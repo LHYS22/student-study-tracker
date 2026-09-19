@@ -62,7 +62,7 @@ This application helps a student focus on a single subject for a 25-minute Pomod
 student-study-tracker/
 ├── backend/
 │   ├── data/
-│   │   └── sessions.json
+│   │   └── sessions.json (generated locally at runtime)
 │   ├── package.json
 │   └── server.js
 ├── frontend/
