@@ -1,11 +1,13 @@
 const express = require("express");
 const cors = require("cors");
+const crypto = require("crypto");
 const fs = require("fs").promises;
 const path = require("path");
 
 const app = express();
 const PORT = 5000;
 const dataFilePath = path.join(__dirname, "data", "sessions.json");
+let sessionWriteQueue = Promise.resolve();
 
 // CORS (Cross-Origin Resource Sharing) allows a web page from one origin
 // to request resources from another origin. In this project, that means the
@@ -43,6 +45,26 @@ async function readSessions() {
 
 async function writeSessions(sessions) {
   await fs.writeFile(dataFilePath, JSON.stringify(sessions, null, 2), "utf8");
+}
+
+function generateSessionId() {
+  return `${Date.now()}-${crypto.randomUUID()}`;
+}
+
+function queueSessionWrite(mutateSessions) {
+  // Concurrent POST requests can otherwise race: two handlers may read the same
+  // file contents, append independently, and let the later write overwrite the
+  // earlier one. Chaining writes through one promise queue serializes the
+  // read-modify-write cycle so every completed session is preserved.
+  const nextWrite = sessionWriteQueue.then(async () => {
+    const sessions = await readSessions();
+    const result = await mutateSessions(sessions);
+    await writeSessions(sessions);
+    return result;
+  });
+
+  sessionWriteQueue = nextWrite.catch(() => {});
+  return nextWrite;
 }
 
 function validateSessionPayload(subject, durationMinutes) {
@@ -83,20 +105,20 @@ app.post("/api/session", async (req, res) => {
       return res.status(400).json({ error: validationError });
     }
 
-    const existingSessions = await readSessions();
+    const newSession = await queueSessionWrite(async (existingSessions) => {
+      // Appending to an array mutates the collection by placing the newest
+      // object at the end. We keep the persisted history in insertion order and
+      // let the frontend reverse it for display.
+      const sessionToStore = {
+        id: generateSessionId(),
+        subject: subject.trim(),
+        durationMinutes,
+        completedAt: new Date().toISOString()
+      };
 
-    // Appending to an array mutates the collection by placing the newest
-    // object at the end. We keep the persisted history in insertion order and
-    // let the frontend reverse it for display.
-    const newSession = {
-      id: Date.now(),
-      subject: subject.trim(),
-      durationMinutes,
-      completedAt: new Date().toISOString()
-    };
-
-    existingSessions.push(newSession);
-    await writeSessions(existingSessions);
+      existingSessions.push(sessionToStore);
+      return sessionToStore;
+    });
 
     return res.status(201).json(newSession);
   } catch (error) {

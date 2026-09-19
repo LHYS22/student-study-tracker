@@ -51,7 +51,7 @@ A local full-stack portfolio application that helps students run Pomodoro study 
 1. Clone the repository and open a terminal in the project root:
 
    ```bash
-   cd /home/runner/work/student-study-tracker/student-study-tracker
+   cd student-study-tracker
    ```
 
 2. Install backend dependencies:
@@ -69,7 +69,7 @@ A local full-stack portfolio application that helps students run Pomodoro study 
 
 4. Open the frontend in your browser:
 
-   - Open `/home/runner/work/student-study-tracker/student-study-tracker/frontend/index.html`
+   - Open `frontend/index.html` from your cloned repository folder
    - Keep the backend running on `http://localhost:5000`
 
 ## API Summary

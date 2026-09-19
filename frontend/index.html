@@ -265,7 +265,14 @@
     </main>
 
     <script>
-      const API_BASE_URL = "http://localhost:5000/api";
+      const configuredApiOrigin =
+        new URLSearchParams(window.location.search).get("apiOrigin") ||
+        window.localStorage.getItem("studyTrackerApiOrigin");
+      const derivedApiOrigin =
+        window.location.protocol === "file:"
+          ? "http://localhost:5000"
+          : `${window.location.protocol}//${window.location.hostname || "localhost"}:5000`;
+      const API_BASE_URL = `${(configuredApiOrigin || derivedApiOrigin).replace(/\/$/, "")}/api`;
       const POMODORO_DURATION_SECONDS = 25 * 60;
 
       const timerValue = document.getElementById("timerValue");
