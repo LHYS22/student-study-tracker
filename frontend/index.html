@@ -383,10 +383,10 @@
         } catch (error) {
           console.error(error);
           showBanner(
-            'Cannot connect to the backend on port 5000. Start the server and refresh the page.',
+            `Cannot connect to the backend at ${API_BASE_URL}. Start the server and refresh the page.`,
             'error'
           );
-          announceStatus('Backend connection lost. Start the server on port 5000.');
+          announceStatus(`Backend connection lost at ${API_BASE_URL}.`);
           historyList.innerHTML = '';
           emptyState.textContent = 'Study history is unavailable while the backend is offline.';
         }
@@ -468,7 +468,7 @@
           console.error(error);
           const bannerMessage =
             error instanceof TypeError
-              ? 'The timer finished, but the backend could not be reached. Check that port 5000 is running.'
+              ? `The timer finished, but the backend at ${API_BASE_URL} could not be reached.`
               : error.message;
 
           showBanner(bannerMessage, 'error');
