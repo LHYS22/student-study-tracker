@@ -23,9 +23,26 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:8080"
 ]);
 
+function isLoopbackAddress(ipAddress) {
+  return ["::1", "::ffff:127.0.0.1", "127.0.0.1"].includes(ipAddress);
+}
+
 // CORS (Cross-Origin Resource Sharing) allows a web page from one origin
 // to request resources from another origin. In this project, that means the
 // frontend can call the backend API from expected local development origins.
+app.use((req, res, next) => {
+  const requestOrigin = req.get("origin");
+
+  if (!requestOrigin && !isLoopbackAddress(req.ip)) {
+    res.status(403).json({
+      error: "Requests without an Origin header are only allowed from the local machine."
+    });
+    return;
+  }
+
+  next();
+});
+
 app.use(
   cors({
     origin(origin, callback) {
