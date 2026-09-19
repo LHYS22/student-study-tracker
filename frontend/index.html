@@ -271,7 +271,7 @@
       const derivedApiOrigin =
         window.location.protocol === "file:"
           ? "http://localhost:5000"
-          : `${window.location.protocol}//${window.location.hostname || "localhost"}:5000`;
+          : window.location.origin;
       const API_BASE_URL = `${(configuredApiOrigin || derivedApiOrigin).replace(/\/$/, "")}/api`;
       const POMODORO_DURATION_SECONDS = 25 * 60;
 
@@ -395,11 +395,13 @@
 
           setErrorBanner("");
           await fetchSessions();
+          return true;
         } catch (error) {
           console.error("Unable to save study session:", error);
           setErrorBanner(
             "The timer finished, but the session could not be saved because the backend server is unavailable."
           );
+          return false;
         }
       }
 
@@ -407,8 +409,12 @@
         clearInterval(timerIntervalId);
         timerIntervalId = null;
         updateButtonState(false);
-        await logCompletedSession();
-        subjectInput.value = "";
+        const saveSucceeded = await logCompletedSession();
+
+        if (saveSucceeded) {
+          subjectInput.value = "";
+        }
+
         resetTimer();
       }
 

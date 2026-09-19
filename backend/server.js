@@ -67,6 +67,12 @@ function queueSessionWrite(mutateSessions) {
   return nextWrite;
 }
 
+function queueSessionRead(readOperation) {
+  // Readers wait for any in-flight queued write to finish so they never parse
+  // the file while a write is still replacing its contents on disk.
+  return sessionWriteQueue.then(() => readOperation());
+}
+
 function validateSessionPayload(subject, durationMinutes) {
   if (typeof subject !== "string" || subject.trim().length === 0) {
     return "The 'subject' field must be a non-empty string.";
@@ -86,7 +92,7 @@ function validateSessionPayload(subject, durationMinutes) {
 
 app.get("/api/sessions", async (req, res) => {
   try {
-    const sessions = await readSessions();
+    const sessions = await queueSessionRead(readSessions);
     return res.status(200).json(sessions);
   } catch (error) {
     console.error("Failed to read study sessions:", error);
