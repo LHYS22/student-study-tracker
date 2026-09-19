@@ -269,7 +269,7 @@
         new URLSearchParams(window.location.search).get("apiOrigin") ||
         window.localStorage.getItem("studyTrackerApiOrigin");
       const derivedApiOrigin =
-        window.location.protocol === "file:"
+        window.location.protocol === "file:" || window.location.port !== "5000"
           ? "http://localhost:5000"
           : window.location.origin;
       const API_BASE_URL = `${(configuredApiOrigin || derivedApiOrigin).replace(/\/$/, "")}/api`;
@@ -285,6 +285,7 @@
 
       let remainingSeconds = POMODORO_DURATION_SECONDS;
       let timerIntervalId = null;
+      let awaitingSaveRetry = false;
 
       function formatTime(totalSeconds) {
         const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
@@ -314,14 +315,17 @@
       }
 
       function updateButtonState(isRunning) {
+        startButton.textContent = awaitingSaveRetry ? "Retry Save" : "Start";
         startButton.disabled = isRunning;
-        resetButton.disabled = !isRunning && remainingSeconds === POMODORO_DURATION_SECONDS;
+        resetButton.disabled =
+          !isRunning && remainingSeconds === POMODORO_DURATION_SECONDS && !awaitingSaveRetry;
         subjectInput.disabled = isRunning;
       }
 
       function resetTimer() {
         clearInterval(timerIntervalId);
         timerIntervalId = null;
+        awaitingSaveRetry = false;
         remainingSeconds = POMODORO_DURATION_SECONDS;
         updateTimerDisplay();
         updateButtonState(false);
@@ -411,17 +415,25 @@
       async function completeSession() {
         clearInterval(timerIntervalId);
         timerIntervalId = null;
-        updateButtonState(false);
         const saveSucceeded = await logCompletedSession();
 
         if (saveSucceeded) {
           subjectInput.value = "";
+          resetTimer();
+          return;
         }
 
-        resetTimer();
+        awaitingSaveRetry = true;
+        updateButtonState(false);
       }
 
       function startTimer() {
+        if (awaitingSaveRetry) {
+          setErrorBanner("");
+          completeSession();
+          return;
+        }
+
         const subject = subjectInput.value.trim();
 
         if (!subject) {

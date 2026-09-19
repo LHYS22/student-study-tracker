@@ -8,12 +8,37 @@ const app = express();
 const PORT = 5000;
 const dataFilePath = path.join(__dirname, "data", "sessions.json");
 let sessionWriteQueue = Promise.resolve();
+const allowedOrigins = new Set([
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+  "http://localhost:5000",
+  "http://127.0.0.1:5000",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "http://localhost:8080",
+  "http://127.0.0.1:8080"
+]);
 
 // CORS (Cross-Origin Resource Sharing) allows a web page from one origin
 // to request resources from another origin. In this project, that means the
 // frontend can call the backend API even when the HTML file is opened
 // separately from the server.
-app.use(cors());
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || origin === "null" || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("This origin is not allowed to access the local study tracker API."));
+    }
+  })
+);
 
 // express.json() reads incoming JSON request bodies and turns them into
 // JavaScript objects on req.body. Without this middleware, POST payloads
