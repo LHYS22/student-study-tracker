@@ -149,6 +149,8 @@ This local-first version is intentionally simple, but the architecture is design
    - Configure environment-specific API base URLs.
    - Add automated tests and CI workflows for reliability.
 
+   > Current limitation: the demo frontend intentionally hardcodes `http://localhost:5000` because this repository is optimized for local portfolio review. A production deployment should replace that constant with an environment-aware configuration strategy.
+
 ## Portfolio Value
 
 This project is intentionally interview-friendly: it demonstrates practical full-stack fundamentals, clean separation of concerns, persistent storage, API design, and security-aware frontend rendering in a compact application that is easy for reviewers to understand.

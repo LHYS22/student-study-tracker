@@ -289,7 +289,9 @@
       let countdownIntervalId = null;
       let remainingMilliseconds = TIMER_DURATION_MS;
       let sessionActive = false;
+      let activeSubject = '';
       let announcementTimeoutId = null;
+      let isSavingCompletion = false;
 
       function sanitizeText(value) {
         // Escaping HTML-sensitive characters prevents saved text from being
@@ -337,9 +339,10 @@
       }
 
       function updateButtonStates() {
-        startButton.disabled = sessionActive;
-        resetButton.disabled = !sessionActive && remainingMilliseconds === TIMER_DURATION_MS;
-        subjectInput.disabled = sessionActive;
+        startButton.disabled = sessionActive || isSavingCompletion;
+        resetButton.disabled =
+          isSavingCompletion || (!sessionActive && remainingMilliseconds === TIMER_DURATION_MS);
+        subjectInput.disabled = sessionActive || isSavingCompletion;
       }
 
       async function fetchSessions() {
@@ -403,10 +406,10 @@
           .join('');
       }
 
-      async function logCompletedSession() {
-        const subject = subjectInput.value.trim();
+      async function logCompletedSession(subject) {
+        const safeSubject = subject.trim();
 
-        if (!subject) {
+        if (!safeSubject) {
           showBanner('Enter a study subject before starting the timer.', 'error');
           return false;
         }
@@ -418,7 +421,7 @@
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              subject,
+              subject: safeSubject,
               durationMinutes: POMODORO_MINUTES
             })
           });
@@ -453,17 +456,21 @@
         clearInterval(countdownIntervalId);
         countdownIntervalId = null;
         sessionActive = false;
+        isSavingCompletion = true;
         remainingMilliseconds = 0;
         updateTimerDisplay();
         updateButtonStates();
 
-        const loggedSuccessfully = await logCompletedSession();
+        const loggedSuccessfully = await logCompletedSession(activeSubject);
+        isSavingCompletion = false;
 
         if (loggedSuccessfully) {
+          activeSubject = '';
           remainingMilliseconds = TIMER_DURATION_MS;
           updateTimerDisplay();
-          updateButtonStates();
         }
+
+        updateButtonStates();
       }
 
       function startTimer() {
@@ -477,6 +484,7 @@
 
         clearBanner();
         sessionActive = true;
+        activeSubject = subject;
         updateButtonStates();
         announceStatus('Pomodoro session started.');
 
@@ -501,6 +509,8 @@
         }
 
         sessionActive = false;
+        activeSubject = '';
+        isSavingCompletion = false;
         remainingMilliseconds = TIMER_DURATION_MS;
         clearBanner();
         updateTimerDisplay();
