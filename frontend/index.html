@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Pomodoro Study Tracker</title>
+    <style>
+      :root {
+        --background: #f5f7fb;
+        --surface: #ffffff;
+        --surface-alt: #eef2ff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --accent: #4f46e5;
+        --accent-dark: #3730a3;
+        --danger-bg: #fee2e2;
+        --danger-text: #991b1b;
+        --border: #dbe4ff;
+        --shadow: 0 18px 45px rgba(79, 70, 229, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        background: linear-gradient(180deg, #f8faff 0%, #edf2ff 100%);
+        color: var(--text);
+      }
+
+      .page {
+        width: min(960px, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: 2rem 0 3rem;
+      }
+
+      .app-shell {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 1.5rem;
+      }
+
+      .hero {
+        text-align: center;
+      }
+
+      .hero h1 {
+        margin-bottom: 0.5rem;
+        font-size: clamp(2rem, 4vw, 2.8rem);
+      }
+
+      .hero p,
+      .section-intro {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .error-banner {
+        display: none;
+        background: var(--danger-bg);
+        color: var(--danger-text);
+        border-radius: 16px;
+        padding: 0.9rem 1rem;
+        font-weight: 700;
+      }
+
+      .error-banner.visible {
+        display: block;
+      }
+
+      .tracker-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+      }
+
+      .tracker-panel,
+      .history-panel {
+        flex: 1 1 320px;
+      }
+
+      label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+
+      input {
+        width: 100%;
+        padding: 0.9rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        font-size: 1rem;
+      }
+
+      .timer {
+        margin: 1.5rem 0;
+        padding: 1.5rem;
+        border-radius: 18px;
+        background: var(--surface-alt);
+        text-align: center;
+      }
+
+      .timer-value {
+        margin: 0;
+        font-size: clamp(3rem, 10vw, 5rem);
+        letter-spacing: 0.08em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .timer-caption {
+        color: var(--muted);
+        margin-top: 0.6rem;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 0.9rem 1.4rem;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 0.15s ease, background 0.15s ease;
+      }
+
+      button:hover:enabled {
+        transform: translateY(-1px);
+      }
+
+      .primary {
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .primary:hover:enabled {
+        background: var(--accent-dark);
+      }
+
+      .secondary {
+        background: #e5e7eb;
+        color: var(--text);
+      }
+
+      button:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .history-list {
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .history-list li {
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1rem;
+      }
+
+      .history-list strong {
+        display: block;
+        margin-bottom: 0.35rem;
+      }
+
+      .history-meta {
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .empty-state {
+        color: var(--muted);
+        background: #f8fafc;
+        border: 1px dashed var(--border);
+        border-radius: 16px;
+        padding: 1rem;
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(100% - 1rem, 960px);
+          padding-top: 1rem;
+        }
+
+        .card {
+          padding: 1.2rem;
+          border-radius: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="app-shell">
+        <section class="card hero">
+          <h1>Student Pomodoro Study Tracker</h1>
+          <p>
+            A focused study companion that runs a 25-minute Pomodoro timer and
+            saves completed sessions to a local Express backend.
+          </p>
+        </section>
+
+        <div id="errorBanner" class="error-banner" role="alert" aria-live="polite"></div>
+
+        <section class="tracker-grid">
+          <article class="card tracker-panel">
+            <h2>Active Session</h2>
+            <p class="section-intro">
+              Enter your subject, start the countdown, and let the app log your
+              finished Pomodoro automatically when the timer reaches zero.
+            </p>
+
+            <label for="subjectInput">Subject</label>
+            <input
+              id="subjectInput"
+              name="subject"
+              type="text"
+              maxlength="80"
+              placeholder="Example: Data Structures"
+            />
+
+            <div class="timer" aria-live="polite">
+              <p id="timerValue" class="timer-value">25:00</p>
+              <p class="timer-caption">Standard Pomodoro duration: 25 minutes</p>
+            </div>
+
+            <div class="actions">
+              <button id="startButton" class="primary" type="button">Start</button>
+              <button id="resetButton" class="secondary" type="button" disabled>
+                Reset
+              </button>
+            </div>
+          </article>
+
+          <article class="card history-panel">
+            <h2>Study History</h2>
+            <p class="section-intro">
+              Completed sessions are loaded from the backend and displayed in
+              reverse chronological order.
+            </p>
+            <ul id="historyList" class="history-list" aria-live="polite"></ul>
+          </article>
+        </section>
+      </div>
+    </main>
+
+    <script>
+      const API_BASE_URL = "http://localhost:5000/api";
+      const POMODORO_DURATION_SECONDS = 25 * 60;
+
+      const timerValue = document.getElementById("timerValue");
+      const startButton = document.getElementById("startButton");
+      const resetButton = document.getElementById("resetButton");
+      const subjectInput = document.getElementById("subjectInput");
+      const historyList = document.getElementById("historyList");
+      const errorBanner = document.getElementById("errorBanner");
+
+      let remainingSeconds = POMODORO_DURATION_SECONDS;
+      let timerIntervalId = null;
+
+      function formatTime(totalSeconds) {
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function updateTimerDisplay() {
+        timerValue.textContent = formatTime(remainingSeconds);
+      }
+
+      function setErrorBanner(message) {
+        errorBanner.textContent = message;
+        errorBanner.classList.toggle("visible", Boolean(message));
+      }
+
+      function escapeHtml(value) {
+        // When dynamic text is inserted with innerHTML, special characters must
+        // be escaped first so user-provided strings cannot be interpreted as
+        // executable markup. This is a simple XSS defense for local rendering.
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function updateButtonState(isRunning) {
+        startButton.disabled = isRunning;
+        resetButton.disabled = !isRunning && remainingSeconds === POMODORO_DURATION_SECONDS;
+        subjectInput.disabled = isRunning;
+      }
+
+      function resetTimer() {
+        clearInterval(timerIntervalId);
+        timerIntervalId = null;
+        remainingSeconds = POMODORO_DURATION_SECONDS;
+        updateTimerDisplay();
+        updateButtonState(false);
+      }
+
+      async function fetchSessions() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/sessions`);
+
+          if (!response.ok) {
+            throw new Error("The backend responded with an unexpected status.");
+          }
+
+          const sessions = await response.json();
+          renderSessions(sessions);
+          setErrorBanner("");
+        } catch (error) {
+          console.error("Unable to load study sessions:", error);
+          setErrorBanner(
+            "Cannot reach the backend server on port 5000. Start the Express server and refresh the page."
+          );
+        }
+      }
+
+      function renderSessions(sessions) {
+        const sortedSessions = [...sessions].sort((left, right) => {
+          return new Date(right.completedAt).getTime() - new Date(left.completedAt).getTime();
+        });
+
+        if (sortedSessions.length === 0) {
+          historyList.innerHTML = '<li class="empty-state">No sessions logged yet. Complete a Pomodoro to create your first entry.</li>';
+          return;
+        }
+
+        historyList.innerHTML = sortedSessions
+          .map((session) => {
+            const safeSubject = escapeHtml(session.subject);
+            const safeDuration = escapeHtml(session.durationMinutes);
+            const safeTimestamp = escapeHtml(
+              new Date(session.completedAt).toLocaleString()
+            );
+
+            return `
+              <li>
+                <strong>${safeSubject}</strong>
+                <div class="history-meta">${safeDuration} minutes • ${safeTimestamp}</div>
+              </li>
+            `;
+          })
+          .join("");
+      }
+
+      async function logCompletedSession() {
+        const subject = subjectInput.value.trim();
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/session`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              subject,
+              durationMinutes: 25
+            })
+          });
+
+          if (!response.ok) {
+            const errorPayload = await response.json().catch(() => ({}));
+            throw new Error(errorPayload.error || "The backend rejected the study session.");
+          }
+
+          setErrorBanner("");
+          await fetchSessions();
+        } catch (error) {
+          console.error("Unable to save study session:", error);
+          setErrorBanner(
+            "The timer finished, but the session could not be saved because the backend server is unavailable."
+          );
+        }
+      }
+
+      async function completeSession() {
+        clearInterval(timerIntervalId);
+        timerIntervalId = null;
+        updateButtonState(false);
+        await logCompletedSession();
+        subjectInput.value = "";
+        resetTimer();
+      }
+
+      function startTimer() {
+        const subject = subjectInput.value.trim();
+
+        if (!subject) {
+          setErrorBanner("Please enter a subject before starting the timer.");
+          subjectInput.focus();
+          return;
+        }
+
+        setErrorBanner("");
+        updateButtonState(true);
+        resetButton.disabled = false;
+
+        if (timerIntervalId !== null) {
+          clearInterval(timerIntervalId);
+        }
+
+        timerIntervalId = window.setInterval(async () => {
+          remainingSeconds -= 1;
+          updateTimerDisplay();
+
+          if (remainingSeconds <= 0) {
+            remainingSeconds = 0;
+            updateTimerDisplay();
+            await completeSession();
+          }
+        }, 1000);
+      }
+
+      startButton.addEventListener("click", startTimer);
+      resetButton.addEventListener("click", () => {
+        setErrorBanner("");
+        resetTimer();
+      });
+
+      updateTimerDisplay();
+      fetchSessions();
+    </script>
+  </body>
+</html>
