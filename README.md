@@ -102,6 +102,7 @@ Open `frontend/index.html` in your browser.
 
 The page will communicate with the backend through the Fetch API. When the backend is running, completed Pomodoro sessions will be written to `backend/data/sessions.json` automatically.
 If the data file does not exist yet, the server creates it on startup with an empty `[]` array.
+By default, the frontend targets `http://localhost:5000`, but you can override that for other local environments with `?apiBaseUrl=http://127.0.0.1:5001` in the page URL or by setting `localStorage.studyTrackerApiBaseUrl`.
 
 ## API Summary
 

@@ -122,3 +122,39 @@ test('POST /api/sessions stores a new validated session', async () => {
     await harness.cleanup();
   }
 });
+
+test('POST /api/sessions preserves all concurrent writes', async () => {
+  const harness = await startTestServer();
+  const concurrentSubjects = ['Databases', 'Networking', 'Compilers'];
+
+  try {
+    const responses = await Promise.all(
+      concurrentSubjects.map((subject) =>
+        fetch(`${harness.baseUrl}/api/sessions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            subject,
+            durationMinutes: 25
+          })
+        })
+      )
+    );
+
+    const storedSessions = JSON.parse(await fs.readFile(harness.dataFilePath, 'utf8'));
+
+    assert.deepEqual(
+      responses.map((response) => response.status),
+      [201, 201, 201]
+    );
+    assert.equal(storedSessions.length, concurrentSubjects.length);
+    assert.deepEqual(
+      storedSessions.map((session) => session.subject).sort(),
+      [...concurrentSubjects].sort()
+    );
+  } finally {
+    await harness.cleanup();
+  }
+});

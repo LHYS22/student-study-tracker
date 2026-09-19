@@ -266,6 +266,7 @@
           <div class="button-row">
             <button id="startButton" class="primary">Start Session</button>
             <button id="resetButton" class="secondary" disabled>Reset</button>
+            <button id="retryButton" class="secondary" type="button" hidden>Retry Save</button>
           </div>
 
           <div id="banner" class="banner" role="alert" aria-live="assertive"></div>
@@ -281,7 +282,11 @@
     </main>
 
     <script>
-      const API_BASE_URL = 'http://localhost:5000';
+      const DEFAULT_API_BASE_URL = 'http://localhost:5000';
+      const configuredApiBaseUrl =
+        new URLSearchParams(window.location.search).get('apiBaseUrl') ||
+        window.localStorage.getItem('studyTrackerApiBaseUrl');
+      const API_BASE_URL = configuredApiBaseUrl || DEFAULT_API_BASE_URL;
       const POMODORO_MINUTES = 25;
       const TIMER_DURATION_MS = POMODORO_MINUTES * 60 * 1000;
 
@@ -289,6 +294,7 @@
       const timerDisplay = document.getElementById('timerDisplay');
       const startButton = document.getElementById('startButton');
       const resetButton = document.getElementById('resetButton');
+      const retryButton = document.getElementById('retryButton');
       const banner = document.getElementById('banner');
       const historyList = document.getElementById('historyList');
       const emptyState = document.getElementById('emptyState');
@@ -298,6 +304,8 @@
       let remainingMilliseconds = TIMER_DURATION_MS;
       let sessionActive = false;
       let activeSubject = '';
+      let pendingCompletedSubject = '';
+      let completionPending = false;
       let announcementTimeoutId = null;
       let isSavingCompletion = false;
 
@@ -343,14 +351,19 @@
       }
 
       function updateTimerDisplay() {
-        timerDisplay.textContent = formatTime(remainingMilliseconds);
+        const formattedTime = formatTime(remainingMilliseconds);
+        timerDisplay.textContent = formattedTime;
+        timerDisplay.setAttribute('aria-label', `Pomodoro countdown timer: ${formattedTime} remaining`);
       }
 
       function updateButtonStates() {
-        startButton.disabled = sessionActive || isSavingCompletion;
+        startButton.disabled = sessionActive || isSavingCompletion || completionPending;
         resetButton.disabled =
-          isSavingCompletion || (!sessionActive && remainingMilliseconds === TIMER_DURATION_MS);
-        subjectInput.disabled = sessionActive || isSavingCompletion;
+          isSavingCompletion ||
+          (!sessionActive && remainingMilliseconds === TIMER_DURATION_MS && !completionPending);
+        retryButton.hidden = !completionPending;
+        retryButton.disabled = isSavingCompletion || !completionPending;
+        subjectInput.disabled = sessionActive || isSavingCompletion || completionPending;
       }
 
       async function fetchSessions() {
@@ -473,10 +486,20 @@
         updateTimerDisplay();
         updateButtonStates();
 
-        const loggedSuccessfully = await logCompletedSession(activeSubject);
+        pendingCompletedSubject = activeSubject;
+        const loggedSuccessfully = await logCompletedSession(pendingCompletedSubject);
         isSavingCompletion = false;
-        activeSubject = '';
-        remainingMilliseconds = TIMER_DURATION_MS;
+
+        if (loggedSuccessfully) {
+          activeSubject = '';
+          pendingCompletedSubject = '';
+          completionPending = false;
+          remainingMilliseconds = TIMER_DURATION_MS;
+        } else {
+          completionPending = true;
+          remainingMilliseconds = 0;
+        }
+
         updateTimerDisplay();
         updateButtonStates();
       }
@@ -493,6 +516,8 @@
         clearBanner();
         sessionActive = true;
         activeSubject = subject;
+        completionPending = false;
+        pendingCompletedSubject = '';
         updateButtonStates();
         announceStatus('Pomodoro session started.');
 
@@ -520,6 +545,8 @@
 
         sessionActive = false;
         activeSubject = '';
+        pendingCompletedSubject = '';
+        completionPending = false;
         isSavingCompletion = false;
         remainingMilliseconds = TIMER_DURATION_MS;
         clearBanner();
@@ -528,8 +555,34 @@
         announceStatus('Pomodoro timer reset.');
       }
 
+      async function retrySave() {
+        if (!completionPending || !pendingCompletedSubject) {
+          return;
+        }
+
+        isSavingCompletion = true;
+        updateButtonStates();
+
+        const loggedSuccessfully = await logCompletedSession(pendingCompletedSubject);
+
+        isSavingCompletion = false;
+
+        if (loggedSuccessfully) {
+          completionPending = false;
+          pendingCompletedSubject = '';
+          activeSubject = '';
+          remainingMilliseconds = TIMER_DURATION_MS;
+        } else {
+          remainingMilliseconds = 0;
+        }
+
+        updateTimerDisplay();
+        updateButtonStates();
+      }
+
       startButton.addEventListener('click', startTimer);
       resetButton.addEventListener('click', resetTimer);
+      retryButton.addEventListener('click', retrySave);
 
       updateTimerDisplay();
       updateButtonStates();
