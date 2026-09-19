@@ -1,0 +1,21 @@
+{
+  "name": "student-study-tracker-backend",
+  "version": "1.0.0",
+  "description": "Express backend for a Student Pomodoro Study Tracker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "pomodoro",
+    "study",
+    "express",
+    "portfolio"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  }
+}
