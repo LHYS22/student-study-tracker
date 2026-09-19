@@ -400,8 +400,14 @@
                   timeStyle: 'short'
                 });
             const safeSubject = sanitizeText(session.subject ?? 'Unknown subject');
-            const safeDuration = sanitizeText(session.durationMinutes ?? '0');
+            const numericDuration = Number(session.durationMinutes);
+            const safeDuration = sanitizeText(
+              Number.isFinite(numericDuration) ? numericDuration : '0'
+            );
             const safeDate = sanitizeText(formattedCompletedAt);
+            const durationLabel = Number.isFinite(numericDuration) && numericDuration === 1
+              ? 'minute'
+              : 'minutes';
 
             return `
               <li class="history-item">
@@ -409,7 +415,7 @@
                   <strong>${safeSubject}</strong>
                   <span class="muted">Completed ${safeDate}</span>
                 </div>
-                <div>${safeDuration} minute Pomodoro</div>
+                <div>${safeDuration} ${durationLabel} Pomodoro</div>
               </li>
             `;
           })
@@ -453,11 +459,7 @@
               : error.message;
 
           showBanner(bannerMessage, 'error');
-          announceStatus(
-            error instanceof TypeError
-              ? 'Pomodoro complete, but the session could not be saved.'
-              : `Pomodoro complete, but saving failed: ${error.message}`
-          );
+          announceStatus(bannerMessage);
           return false;
         }
       }
@@ -477,10 +479,6 @@
         remainingMilliseconds = TIMER_DURATION_MS;
         updateTimerDisplay();
         updateButtonStates();
-
-        if (!loggedSuccessfully) {
-          announceStatus('Timer reset after completion. Review the save error banner for details.');
-        }
       }
 
       function startTimer() {
