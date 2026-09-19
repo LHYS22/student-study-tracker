@@ -65,7 +65,7 @@ app.get('/api/sessions', async (req, res) => {
   }
 });
 
-app.post('/api/session', async (req, res) => {
+app.post('/api/sessions', async (req, res) => {
   try {
     const { subject, durationMinutes } = req.body;
 

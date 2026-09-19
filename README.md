@@ -100,7 +100,7 @@ If the data file does not exist yet, the server creates it on startup with an em
 ### `GET /api/sessions`
 Returns the stored study-session history as a JSON array.
 
-### `POST /api/session`
+### `POST /api/sessions`
 Accepts a JSON payload such as:
 
 ```json

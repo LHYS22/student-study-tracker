@@ -252,7 +252,15 @@
             />
           </div>
 
-          <div id="timerDisplay" class="timer-display">25:00</div>
+          <div
+            id="timerDisplay"
+            class="timer-display"
+            role="timer"
+            aria-label="Pomodoro countdown timer"
+            aria-atomic="true"
+          >
+            25:00
+          </div>
           <div id="screenReaderStatus" class="sr-only" aria-live="polite"></div>
 
           <div class="button-row">
@@ -415,7 +423,7 @@
         }
 
         try {
-          const response = await fetch(`${API_BASE_URL}/api/session`, {
+          const response = await fetch(`${API_BASE_URL}/api/sessions`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -494,6 +502,8 @@
           remainingMilliseconds -= 1000;
 
           if (remainingMilliseconds <= 0) {
+            clearInterval(countdownIntervalId);
+            countdownIntervalId = null;
             handleTimerCompletion();
             return;
           }
