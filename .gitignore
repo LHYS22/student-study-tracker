@@ -1,4 +1,5 @@
 node_modules/
+backend/data/sessions.json
 
 # Logs and diagnostics
 logs/

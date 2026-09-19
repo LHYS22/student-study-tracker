@@ -1,11 +1,13 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const fs = require('fs').promises;
 const path = require('path');
 
 const app = express();
 const PORT = 5000;
 const DATA_FILE_PATH = path.join(__dirname, 'data', 'sessions.json');
+let sessionWriteQueue = Promise.resolve();
 
 // CORS (Cross-Origin Resource Sharing) allows a browser page served from one
 // origin to safely request data from a different origin during development.
@@ -45,6 +47,14 @@ async function writeSessionsToFile(sessions) {
   await fs.writeFile(DATA_FILE_PATH, JSON.stringify(sessions, null, 2), 'utf8');
 }
 
+function enqueueSessionWrite(work) {
+  // Serializing writes through a shared promise queue prevents a classic
+  // read-modify-write race where concurrent requests could overwrite each other.
+  const queuedWork = sessionWriteQueue.then(work);
+  sessionWriteQueue = queuedWork.catch(() => {});
+  return queuedWork;
+}
+
 app.get('/api/sessions', async (req, res) => {
   try {
     const sessions = await readSessionsFromFile();
@@ -70,20 +80,23 @@ app.post('/api/session', async (req, res) => {
       });
     }
 
-    const sessions = await readSessionsFromFile();
-    const newSession = {
-      // Date.now() returns the number of milliseconds since the Unix epoch,
-      // which is a quick way to generate a locally unique numeric identifier.
-      id: Date.now(),
-      subject: subject.trim(),
-      durationMinutes,
-      completedAt: new Date().toISOString()
-    };
+    const newSession = await enqueueSessionWrite(async () => {
+      const sessions = await readSessionsFromFile();
+      const sessionToSave = {
+        // randomUUID() provides a collision-resistant identifier, which is more
+        // reliable than millisecond timestamps when requests arrive close together.
+        id: crypto.randomUUID(),
+        subject: subject.trim(),
+        durationMinutes,
+        completedAt: new Date().toISOString()
+      };
 
-    // Array push mutates the existing array by appending a new element at the
-    // end, which is appropriate here because we want to preserve prior history.
-    sessions.push(newSession);
-    await writeSessionsToFile(sessions);
+      // Array push mutates the existing array by appending a new element at the
+      // end, which is appropriate here because we want to preserve prior history.
+      sessions.push(sessionToSave);
+      await writeSessionsToFile(sessions);
+      return sessionToSave;
+    });
 
     return res.status(201).json(newSession);
   } catch (error) {

@@ -204,6 +204,18 @@
         color: var(--muted);
       }
 
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       @media (max-width: 720px) {
         .panel {
           padding: 24px;
@@ -239,7 +251,8 @@
             />
           </div>
 
-          <div id="timerDisplay" class="timer-display" aria-live="polite">25:00</div>
+          <div id="timerDisplay" class="timer-display">25:00</div>
+          <div id="screenReaderStatus" class="sr-only" aria-live="polite"></div>
 
           <div class="button-row">
             <button id="startButton" class="primary">Start Session</button>
@@ -270,6 +283,7 @@
       const banner = document.getElementById('banner');
       const historyList = document.getElementById('historyList');
       const emptyState = document.getElementById('emptyState');
+      const screenReaderStatus = document.getElementById('screenReaderStatus');
 
       let countdownIntervalId = null;
       let remainingMilliseconds = TIMER_DURATION_MS;
@@ -294,6 +308,13 @@
       function clearBanner() {
         banner.textContent = '';
         banner.className = 'banner';
+      }
+
+      function announceStatus(message) {
+        screenReaderStatus.textContent = '';
+        window.setTimeout(() => {
+          screenReaderStatus.textContent = message;
+        }, 0);
       }
 
       function formatTime(milliseconds) {
@@ -334,6 +355,7 @@
             'Cannot connect to the backend on port 5000. Start the server and refresh the page.',
             'error'
           );
+          announceStatus('Backend connection lost. Start the server on port 5000.');
           historyList.innerHTML = '';
           emptyState.textContent = 'Study history is unavailable while the backend is offline.';
         }
@@ -400,6 +422,7 @@
           }
 
           showBanner('Session completed and saved successfully.', 'success');
+          announceStatus('Pomodoro complete. Session saved successfully.');
           await fetchSessions();
           return true;
         } catch (error) {
@@ -408,6 +431,7 @@
             'The timer finished, but the backend could not be reached. Check that port 5000 is running.',
             'error'
           );
+          announceStatus('Pomodoro complete, but the session could not be saved.');
           return false;
         }
       }
@@ -434,12 +458,14 @@
 
         if (!subject) {
           showBanner('Enter a study subject before starting the timer.', 'error');
+          announceStatus('Enter a study subject before starting the timer.');
           return;
         }
 
         clearBanner();
         sessionActive = true;
         updateButtonStates();
+        announceStatus('Pomodoro session started.');
 
         // setInterval schedules repeated callbacks without freezing the UI,
         // allowing the browser event loop to keep the page responsive.
@@ -466,6 +492,7 @@
         clearBanner();
         updateTimerDisplay();
         updateButtonStates();
+        announceStatus('Pomodoro timer reset.');
       }
 
       startButton.addEventListener('click', startTimer);

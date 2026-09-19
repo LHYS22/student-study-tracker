@@ -93,6 +93,7 @@ The backend will run locally at `http://localhost:5000`.
 Open `frontend/index.html` in your browser.
 
 The page will communicate with the backend through the Fetch API. When the backend is running, completed Pomodoro sessions will be written to `backend/data/sessions.json` automatically.
+If the data file does not exist yet, the server creates it on startup with an empty `[]` array.
 
 ## API Summary
 
@@ -111,7 +112,7 @@ Accepts a JSON payload such as:
 
 If validation succeeds, the backend appends a new record containing:
 
-- `id` generated from `Date.now()`
+- `id` generated from `crypto.randomUUID()`
 - `subject`
 - `durationMinutes`
 - `completedAt` in ISO 8601 format
