@@ -63,8 +63,10 @@ student-study-tracker/
 ├── backend/
 │   ├── data/
 │   │   └── sessions.json (generated locally at runtime)
+│   ├── app.js
 │   ├── package.json
-│   └── server.js
+│   ├── server.js
+│   └── server.test.js
 ├── frontend/
 │   └── index.html
 ├── .gitignore
@@ -88,7 +90,13 @@ npm start
 
 The backend will run locally at `http://localhost:5000`.
 
-### 3. Open the frontend
+### 3. Run the backend test suite
+
+```bash
+npm test
+```
+
+### 4. Open the frontend
 
 Open `frontend/index.html` in your browser.
 

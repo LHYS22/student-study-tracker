@@ -392,14 +392,16 @@
 
         historyList.innerHTML = orderedSessions
           .map((session) => {
+            const completedAt = new Date(session.completedAt);
+            const formattedCompletedAt = Number.isNaN(completedAt.getTime())
+              ? 'an unknown time'
+              : completedAt.toLocaleString(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short'
+                });
             const safeSubject = sanitizeText(session.subject ?? 'Unknown subject');
             const safeDuration = sanitizeText(session.durationMinutes ?? '0');
-            const safeDate = sanitizeText(
-              new Date(session.completedAt).toLocaleString(undefined, {
-                dateStyle: 'medium',
-                timeStyle: 'short'
-              })
-            );
+            const safeDate = sanitizeText(formattedCompletedAt);
 
             return `
               <li class="history-item">
@@ -471,14 +473,14 @@
 
         const loggedSuccessfully = await logCompletedSession(activeSubject);
         isSavingCompletion = false;
-
-        if (loggedSuccessfully) {
-          activeSubject = '';
-          remainingMilliseconds = TIMER_DURATION_MS;
-          updateTimerDisplay();
-        }
-
+        activeSubject = '';
+        remainingMilliseconds = TIMER_DURATION_MS;
+        updateTimerDisplay();
         updateButtonStates();
+
+        if (!loggedSuccessfully) {
+          announceStatus('Timer reset after completion. Review the save error banner for details.');
+        }
       }
 
       function startTimer() {
