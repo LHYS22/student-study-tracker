@@ -25,12 +25,11 @@ const allowedOrigins = new Set([
 
 // CORS (Cross-Origin Resource Sharing) allows a web page from one origin
 // to request resources from another origin. In this project, that means the
-// frontend can call the backend API even when the HTML file is opened
-// separately from the server.
+// frontend can call the backend API from expected local development origins.
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || origin === "null" || allowedOrigins.has(origin)) {
+      if (!origin || allowedOrigins.has(origin)) {
         callback(null, true);
         return;
       }
@@ -44,6 +43,7 @@ app.use(
 // JavaScript objects on req.body. Without this middleware, POST payloads
 // would arrive as raw text and be harder to validate safely.
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "..", "frontend")));
 
 async function ensureDataFile() {
   try {

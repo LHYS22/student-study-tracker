@@ -286,6 +286,7 @@
       let remainingSeconds = POMODORO_DURATION_SECONDS;
       let timerIntervalId = null;
       let awaitingSaveRetry = false;
+      let saveInFlight = false;
 
       function formatTime(totalSeconds) {
         const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
@@ -315,11 +316,17 @@
       }
 
       function updateButtonState(isRunning) {
-        startButton.textContent = awaitingSaveRetry ? "Retry Save" : "Start";
-        startButton.disabled = isRunning;
+        startButton.textContent = saveInFlight
+          ? "Saving..."
+          : awaitingSaveRetry
+            ? "Retry Save"
+            : "Start";
+        startButton.disabled = isRunning || saveInFlight;
         resetButton.disabled =
-          !isRunning && remainingSeconds === POMODORO_DURATION_SECONDS && !awaitingSaveRetry;
-        subjectInput.disabled = isRunning;
+          isRunning ||
+          saveInFlight ||
+          (!awaitingSaveRetry && remainingSeconds === POMODORO_DURATION_SECONDS);
+        subjectInput.disabled = isRunning || saveInFlight;
       }
 
       function resetTimer() {
@@ -413,9 +420,16 @@
       }
 
       async function completeSession() {
+        if (saveInFlight) {
+          return;
+        }
+
         clearInterval(timerIntervalId);
         timerIntervalId = null;
+        saveInFlight = true;
+        updateButtonState(false);
         const saveSucceeded = await logCompletedSession();
+        saveInFlight = false;
 
         if (saveSucceeded) {
           subjectInput.value = "";

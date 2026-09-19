@@ -67,10 +67,10 @@ A local full-stack portfolio application that helps students run Pomodoro study 
    npm start
    ```
 
-4. Open the frontend in your browser:
+4. Open the app in your browser:
 
-   - Open `frontend/index.html` from your cloned repository folder
-   - Keep the backend running on `http://localhost:5000`
+   - Visit `http://localhost:5000`
+   - The Express server also serves the `frontend/index.html` file locally for convenience, while the frontend and API remain separate layers in the codebase
 
 ## API Summary
 
